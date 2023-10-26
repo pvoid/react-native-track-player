@@ -20,4 +20,10 @@ export interface AndroidOptions {
    * Defaults to 5 seconds.
    */
   stopForegroundGracePeriod?: number;
+
+  /**
+   * Keep media notification even when player stopped or in error state.
+   * Useful to allow user to restart or try again directly from the notification
+   */
+  alwaysKeepMediaNotification?: boolean;
 }

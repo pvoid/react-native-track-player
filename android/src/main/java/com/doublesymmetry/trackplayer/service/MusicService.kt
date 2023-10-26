@@ -60,6 +60,7 @@ class MusicService : HeadlessJsTaskService() {
 
     private var appKilledPlaybackBehavior = AppKilledPlaybackBehavior.CONTINUE_PLAYBACK
     private var stopForegroundGracePeriod: Int = DEFAULT_STOP_FOREGROUND_GRACE_PERIOD
+    private var alwaysKeepNotification: Boolean = false
 
     val tracks: List<Track>
         get() = player.items.map { (it as TrackAudioItem).track }
@@ -172,6 +173,7 @@ class MusicService : HeadlessJsTaskService() {
         appKilledPlaybackBehavior = AppKilledPlaybackBehavior::string.find(androidOptions?.getString(APP_KILLED_PLAYBACK_BEHAVIOR_KEY)) ?: AppKilledPlaybackBehavior.CONTINUE_PLAYBACK
 
         BundleUtils.getIntOrNull(androidOptions, STOP_FOREGROUND_GRACE_PERIOD_KEY)?.let { stopForegroundGracePeriod = it }
+        alwaysKeepNotification = androidOptions?.getBoolean(ALWAYS_KEEP_MEDIA_NOTIFICATION, false) ?: false
 
         // TODO: This handles a deprecated flag. Should be removed soon.
         options.getBoolean(STOPPING_APP_PAUSES_PLAYBACK_KEY).let {
@@ -590,7 +592,7 @@ class MusicService : HeadlessJsTaskService() {
                                 delay(stopForegroundGracePeriod.toLong() * 1000)
                                 if (shouldStopForeground()) {
                                     @Suppress("DEPRECATION")
-                                    stopForeground(removeNotificationWhenNotOngoing)
+                                    stopForeground(removeNotificationWhenNotOngoing && !alwaysKeepNotification)
                                     Timber.d("Notification has been stopped")
                                 }
                             }
@@ -783,7 +785,7 @@ class MusicService : HeadlessJsTaskService() {
                     stopForeground(STOP_FOREGROUND_REMOVE)
                 } else {
                     @Suppress("DEPRECATION")
-                    stopForeground(true)
+                    stopForeground(!alwaysKeepNotification)
                 }
 
                 stopSelf()
@@ -842,6 +844,7 @@ class MusicService : HeadlessJsTaskService() {
 
         const val STOPPING_APP_PAUSES_PLAYBACK_KEY = "stoppingAppPausesPlayback"
         const val APP_KILLED_PLAYBACK_BEHAVIOR_KEY = "appKilledPlaybackBehavior"
+        const val ALWAYS_KEEP_MEDIA_NOTIFICATION = "alwaysKeepMediaNotification"
         const val STOP_FOREGROUND_GRACE_PERIOD_KEY = "stopForegroundGracePeriod"
         const val PAUSE_ON_INTERRUPTION_KEY = "alwaysPauseOnInterruption"
         const val AUTO_UPDATE_METADATA = "autoUpdateMetadata"

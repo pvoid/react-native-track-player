@@ -23,6 +23,7 @@ import com.doublesymmetry.trackplayer.extensions.asLibState
 import com.doublesymmetry.trackplayer.extensions.find
 import com.doublesymmetry.trackplayer.model.MetadataAdapter
 import com.doublesymmetry.trackplayer.model.PlaybackMetadata
+import com.doublesymmetry.trackplayer.model.State
 import com.doublesymmetry.trackplayer.model.Track
 import com.doublesymmetry.trackplayer.model.TrackAudioItem
 import com.doublesymmetry.trackplayer.module.MusicEvents
@@ -60,6 +61,7 @@ class MusicService : HeadlessJsTaskService() {
 
     private var appKilledPlaybackBehavior = AppKilledPlaybackBehavior.CONTINUE_PLAYBACK
     private var stopForegroundGracePeriod: Int = DEFAULT_STOP_FOREGROUND_GRACE_PERIOD
+    private var keepNotificationInStates = listOf<AudioPlayerState>()
 
     val tracks: List<Track>
         get() = player.items.map { (it as TrackAudioItem).track }
@@ -170,6 +172,18 @@ class MusicService : HeadlessJsTaskService() {
         appKilledPlaybackBehavior = AppKilledPlaybackBehavior::string.find(androidOptions?.getString(APP_KILLED_PLAYBACK_BEHAVIOR_KEY)) ?: AppKilledPlaybackBehavior.CONTINUE_PLAYBACK
 
         BundleUtils.getIntOrNull(androidOptions, STOP_FOREGROUND_GRACE_PERIOD_KEY)?.let { stopForegroundGracePeriod = it }
+
+        keepNotificationInStates = if (androidOptions?.containsKey(KEEP_NOTIFICATION_IN_STATES) == true) {
+            androidOptions.getStringArrayList(KEEP_NOTIFICATION_IN_STATES)?.mapNotNull {
+                when (it) {
+                    State.Stopped.state -> AudioPlayerState.STOPPED
+                    State.Error.state -> AudioPlayerState.ERROR
+                    else -> null
+                }
+            }?.toList() ?: emptyList()
+        } else {
+            emptyList()
+        }
 
         // TODO: This handles a deprecated flag. Should be removed soon.
         options.getBoolean(STOPPING_APP_PAUSES_PLAYBACK_KEY).let {
@@ -559,7 +573,7 @@ class MusicService : HeadlessJsTaskService() {
                 // Skip initial idle state, since we are only interested when
                 // state becomes idle after not being idle
                 stopForegroundWhenNotOngoing = stateCount > 1 && it in BACKGROUNDABLE_STATES
-                removeNotificationWhenNotOngoing = stopForegroundWhenNotOngoing && it in REMOVABLE_STATES
+                removeNotificationWhenNotOngoing = stopForegroundWhenNotOngoing && it in REMOVABLE_STATES && it !in keepNotificationInStates
             }
         }
 
@@ -841,6 +855,7 @@ class MusicService : HeadlessJsTaskService() {
         const val STOPPING_APP_PAUSES_PLAYBACK_KEY = "stoppingAppPausesPlayback"
         const val APP_KILLED_PLAYBACK_BEHAVIOR_KEY = "appKilledPlaybackBehavior"
         const val STOP_FOREGROUND_GRACE_PERIOD_KEY = "stopForegroundGracePeriod"
+        const val KEEP_NOTIFICATION_IN_STATES = "keepNotificationInStates"
         const val PAUSE_ON_INTERRUPTION_KEY = "alwaysPauseOnInterruption"
         const val AUTO_UPDATE_METADATA = "autoUpdateMetadata"
         const val AUTO_HANDLE_INTERRUPTIONS = "autoHandleInterruptions"

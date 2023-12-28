@@ -1,4 +1,4 @@
-import type { AppKilledPlaybackBehavior } from '../constants';
+import type { AppKilledPlaybackBehavior, State } from '../constants';
 
 export interface AndroidOptions {
   /**
@@ -20,4 +20,9 @@ export interface AndroidOptions {
    * Defaults to 5 seconds.
    */
   stopForegroundGracePeriod?: number;
+
+  /**
+   * TODO: Add documentation
+   */
+  keepNotificationInStates?: Array<State>;
 }

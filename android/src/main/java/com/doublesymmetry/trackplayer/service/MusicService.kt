@@ -122,7 +122,11 @@ class MusicService : HeadlessJsTaskService() {
             notificationBuilder.foregroundServiceBehavior = NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE
         }
         val notification = notificationBuilder.build()
-        startForeground(EMPTY_NOTIFICATION_ID, notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(EMPTY_NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+        } else {
+            startForeground(EMPTY_NOTIFICATION_ID, notification)
+        }
         @Suppress("DEPRECATION")
         stopForeground(true)
     }
